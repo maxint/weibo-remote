@@ -106,15 +106,20 @@ class Main():
 
     def checkin(self, id, text, user):
         import checkin
+        log.info('== checkin')
         ss = text.split()
         if len(ss) >= 4:
             username = ss[-2]
             passwd = ss[-1]
-        else:
+        elif user == self.master:
             username = self.username
             passwd = self.passwd
+        else:
+            log.info('invalid parameters')
+            self.weibo_comment(u'usage: checkin username passwd', id)
+            return
 
-        log.info("check in: %s, %s", username, passwd)
+        log.info("%s, %s", username, passwd)
         r, msg = checkin.checkin(username, passwd)
         log.info(str(msg))
         self.weibo_comment(u'成功啦[呵呵]' if r else u'出错啦[泪]' + msg, id)
@@ -128,7 +133,7 @@ class Main():
             if u'打卡' in text or 'checkin' in text or 'check' in text:
                 self.checkin(id, text, user)
             elif u'截图' in text:
-                log.info('screen capture')
+                log.info('== screen capture')
                 comment(u'还不支持本操作[衰]')
             else:
                 log.error('unknown operation')
