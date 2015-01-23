@@ -37,7 +37,7 @@ def pprint(m):
 
 
 class Main():
-    def __init__(self):
+    def __init__(self, username, passwd):
         try:
             self.wb = weibo.load(CACHED_FILE)
         except:
@@ -48,6 +48,8 @@ class Main():
         except:
             d = dict()
         self.since_id = d.get('since_id', 0)
+        self.username = username
+        self.passwd = passwd
 
     def store(self):
         s = json.dumps(dict(
@@ -74,14 +76,20 @@ class Main():
 
     def process(self, id, text, user):
         log.info('User: %s, Id: %s, Content: %s', user, id, text)
+        def comment(content):
+            self.wb.comments_create(content, id)
+
         if user == 'maxint':
             if u'打卡' in text or 'checkin' in text or 'check' in text:
                 log.info('check in')
+                import checkin
+                r, msg = checkin.checkin(self.username, self.passwd)
+                log.info(str(msg))
+                comment(u'成功啦！' if r else u'出错啦！' + msg)
             elif u'截图' in text:
                 log.info('screen capture')
 
         #self.since_id = id
-        #r = self.wb.comments_create('OK', s['id'])
 
 
 class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -101,14 +109,25 @@ class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.echoHTML('OK')
             httpd.server_close()
 
+
+def usage():
+    import sys
+    print 'usage:', sys.argv[0], ' <username> <password>'
+
 if __name__ == '__main__':
     enable_log(log, 'weibo.log')
-    host = '127.0.0.1'
-    port = 8000
-    main = Main()
+
+    import sys
+    if len(sys.argv) != 3:
+        usage()
+        sys.exit(-1)
+
+    main = Main(sys.argv[1], sys.argv[2])
     if main.wb.oauth.authorized:
         main.safe_do()
     else:
+        host = '127.0.0.1'
+        port = 8000
         httpd = BaseHTTPServer.HTTPServer((host, port), ServerRequestHandler)
         try:
             httpd.serve_forever()

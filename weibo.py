@@ -63,7 +63,7 @@ class Weibo():
 
     def comments_create(self, comment, id):
         return self.post('2/comments/create.json',
-                         data=dict(comment=urllib.quote_plus(comment),
+                         data=dict(comment=comment,
                                    id=id))
     def statuses_mentions(self, **kwargs):
         '''@since_id, @count'''
