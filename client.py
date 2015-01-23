@@ -57,7 +57,7 @@ def sleep_time():
 
 
 class Main():
-    def __init__(self, username, passwd, debug=False):
+    def __init__(self, username, passwd, debug=False, master='maxint'):
         try:
             self.wb = weibo.load(CACHED_FILE)
         except:
@@ -71,12 +71,16 @@ class Main():
         self.username = username
         self.passwd = passwd
         self.debug = debug
+        self.master = master
+        self.changed = False
 
     def store(self):
-        s = json.dumps(dict(
-            since_id=self.since_id,
-        ))
-        open(DATA_FILE, 'wt').write(s)
+        if self.changed:
+            s = json.dumps(dict(
+                since_id=self.since_id,
+            ))
+            open(DATA_FILE, 'wt').write(s)
+            self.changed = False
 
     def do(self):
         mentions = self.wb.statuses_mentions()
@@ -90,8 +94,7 @@ class Main():
         try:
             while True:
                 self.do()
-                if self.debug:
-                    break
+                self.store()
                 time.sleep(sleep_time())
         finally:
             self.store()
@@ -101,7 +104,7 @@ class Main():
         def comment(content):
             self.wb.comments_create(content, id)
 
-        if user == 'maxint':
+        if user == self.master:
             if u'打卡' in text or 'checkin' in text or 'check' in text:
                 log.info('check in')
                 import checkin
@@ -116,9 +119,10 @@ class Main():
                 comment(u'还不支持本操作[衰]')
         else:
             log.error('unknown user')
-            comment(u'你不是我的主人，请不要打扰我[鄙视]')
+            comment(u'你不是我的主人，请不要打扰我[xkl转圈]')
 
         self.since_id = id
+        self.changed = True
 
 
 class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -139,19 +143,21 @@ class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             httpd.server_close()
 
 
-def usage():
-    import sys
-    print 'usage:', sys.argv[0], ' <username> <password> [debug]'
-
 if __name__ == '__main__':
     enable_log(log, 'weibo.log')
 
-    import sys
-    if len(sys.argv) < 3:
-        usage()
-        sys.exit(-1)
+    import argparse
+    parser = argparse.ArgumentParser(description='weibo client of a computer')
+    parser.add_argument('username', help='user name of doc-server')
+    parser.add_argument('password', help='password of doc-server')
+    parser.add_argument('--debug', '-D', action='store_true',
+                        help='enable debug')
+    parser.add_argument('--master', default='maxint',
+                        help='weibo master')
 
-    main = Main(sys.argv[1], sys.argv[2], len(sys.argv) > 3)
+    args = parser.parse_args()
+
+    main = Main(args.username, args.password, args.debug, args.master)
     if main.wb.oauth.authorized:
         main.safe_do()
     else:
