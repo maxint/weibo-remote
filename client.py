@@ -7,6 +7,7 @@ import urlparse
 import pprint
 import json
 import logging
+import time
 
 log = logging.getLogger('weibo')
 
@@ -36,8 +37,27 @@ def pprint(m):
     PP.pprint(m)
 
 
+def sleep_time():
+    import datetime
+    now = datetime.datetime.now()
+    h = now.hour
+    m = now.minute
+    s = now.second
+    if h == 8 and m > 30:
+        if m < 50:
+            return 30
+        elif m < 55:
+            return 20
+        elif m < 58:
+            return 10
+        else:
+            return 1
+    else:
+        return 60
+
+
 class Main():
-    def __init__(self, username, passwd):
+    def __init__(self, username, passwd, debug=False):
         try:
             self.wb = weibo.load(CACHED_FILE)
         except:
@@ -50,6 +70,7 @@ class Main():
         self.since_id = d.get('since_id', 0)
         self.username = username
         self.passwd = passwd
+        self.debug = debug
 
     def store(self):
         s = json.dumps(dict(
@@ -69,8 +90,9 @@ class Main():
         try:
             while True:
                 self.do()
-                # TODO: sleep
-                break
+                if self.debug:
+                    break
+                time.sleep(sleep_time())
         finally:
             self.store()
 
@@ -89,7 +111,7 @@ class Main():
             elif u'截图' in text:
                 log.info('screen capture')
 
-        #self.since_id = id
+        self.since_id = id
 
 
 class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -112,17 +134,17 @@ class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 def usage():
     import sys
-    print 'usage:', sys.argv[0], ' <username> <password>'
+    print 'usage:', sys.argv[0], ' <username> <password> [debug]'
 
 if __name__ == '__main__':
     enable_log(log, 'weibo.log')
 
     import sys
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         usage()
         sys.exit(-1)
 
-    main = Main(sys.argv[1], sys.argv[2])
+    main = Main(sys.argv[1], sys.argv[2], len(sys.argv) > 3)
     if main.wb.oauth.authorized:
         main.safe_do()
     else:
