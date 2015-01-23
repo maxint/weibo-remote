@@ -88,16 +88,36 @@ class Main():
         for id in ids.get('statuses', []):
             s = self.wb.statuses_show(id)
             if s:
-                self.process(s['id'], s['text'], s['user']['name'])
+                self.process(s['idstr'], s['text'], s['user']['name'])
 
     def safe_do(self):
         try:
             while True:
                 self.do()
                 self.store()
+                if self.debug:
+                    break
                 time.sleep(sleep_time())
         finally:
             self.store()
+
+    def weibo_comment(self, content, id):
+        self.wb.comments_create(content, id)
+
+    def checkin(self, id, text, user):
+        import checkin
+        ss = text.split()
+        if len(ss) >= 4:
+            username = ss[-2]
+            passwd = ss[-1]
+        else:
+            username = self.username
+            passwd = self.passwd
+
+        log.info("check in: %s, %s", username, passwd)
+        r, msg = checkin.checkin(username, passwd)
+        log.info(str(msg))
+        self.weibo_comment(u'成功啦[呵呵]' if r else u'出错啦[泪]' + msg, id)
 
     def process(self, id, text, user):
         log.info('User: %s, Id: %s, Content: %s', user, id, text)
@@ -106,11 +126,7 @@ class Main():
 
         if user == self.master:
             if u'打卡' in text or 'checkin' in text or 'check' in text:
-                log.info('check in')
-                import checkin
-                r, msg = checkin.checkin(self.username, self.passwd)
-                log.info(str(msg))
-                comment(u'成功啦[呵呵]' if r else u'出错啦[泪]' + msg)
+                self.checkin(id, text, user)
             elif u'截图' in text:
                 log.info('screen capture')
                 comment(u'还不支持本操作[衰]')
@@ -118,8 +134,11 @@ class Main():
                 log.error('unknown operation')
                 comment(u'还不支持本操作[衰]')
         else:
-            log.error('unknown user')
-            comment(u'你不是我的主人，请不要打扰我[xkl转圈]')
+            if u'打卡' in text or 'checkin' in text or 'check' in text:
+                self.checkin(id, text, user)
+            else:
+                log.error('unknown operation')
+                comment(u'还不支持本操作[衰]')
 
         self.since_id = id
         self.changed = True
