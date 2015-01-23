@@ -7,7 +7,7 @@ from oauthlib.oauth2 import WebApplicationClient
 import json
 import logging
 
-log = logging.getLogger(__file__)
+log = logging.getLogger('weibo')
 
 API_HOST = 'https://api.weibo.com/'
 
@@ -46,12 +46,11 @@ class Weibo():
         open(filename, 'wt').write(s)
 
     def request(self, method, subpath, **kwargs):
-        req = self.oauth.request(method, self.url(subpath), headers=kwargs)
+        req = self.oauth.request(method, self.url(subpath), **kwargs)
         if req.ok:
             return json.loads(req.text)
         else:
             log.error(req.text)
-
 
     def get(self, subpath, **kwargs):
         return self.request('GET', subpath, **kwargs)
@@ -63,11 +62,19 @@ class Weibo():
         return self.get('2/comments/mentions.json')
 
     def comments_create(self, comment, id):
-        return self.post('comments/create',
-                         comment=comment, id=id)
+        return self.post('2/comments/create.json',
+                         data=dict(comment=urllib.quote_plus(comment),
+                                   id=id))
+    def statuses_mentions(self, **kwargs):
+        '''@since_id, @count'''
+        return self.get('2/statuses/mentions.json', params=kwargs)
 
-    def statuses_mentions(self):
-        return self.get('2/statuses/mentions.json')
+    def statuses_mentions_ids(self, **kwargs):
+        return self.get('2/statuses/mentions/ids.json', params=kwargs)
+
+    def statuses_show(self, id):
+        return self.get('2/statuses/show.json',
+                        params=dict(id=id))
 
 def load(filename):
     d = json.load(open(filename, 'rt'))

@@ -6,13 +6,10 @@ import re
 import sys
 import getpass
 
-rooturl = 'http://doc-server'
-username = 'lny1856'
-
 def usage():
     print 'usage: checkin.py [username] <passwd>'
 
-def checkin(passwd):
+def checkin(username, passwd):
     # get field name
     cj = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
@@ -26,6 +23,8 @@ def checkin(passwd):
             ('Referer', 'http://doc-server/login.asp'),
             ('Connection', 'keep-alive'),
             ]
+
+    rooturl = 'http://doc-server'
     res = opener.open(rooturl + '/login.asp')
     fieldname = re.findall(r'id="(userName[^"]*)"', res.read())[0]
 
@@ -41,22 +40,21 @@ def checkin(passwd):
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
-        passwd = sys.argv[1]
+        username = sys.argv[1]
+        passwd = None
     elif len(sys.argv) == 3:
         username = sys.argv[1]
         passwd = sys.argv[2]
-    elif len(sys.argv) != 1:
+    else:
         usage()
         sys.exit(-1)
-    else:
-        passwd = None
 
     count = 0
     print 'Username: {}'.format(username)
     while count < 3:
         if passwd is None:
             passwd = getpass.getpass()
-        r, msg = checkin(passwd)
+        r, msg = checkin(username, passwd)
         print msg
         if r:
             break
