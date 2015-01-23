@@ -107,9 +107,16 @@ class Main():
                 import checkin
                 r, msg = checkin.checkin(self.username, self.passwd)
                 log.info(str(msg))
-                comment(u'成功啦！' if r else u'出错啦！' + msg)
+                comment(u'成功啦:)' if r else u'出错啦:(' + msg)
             elif u'截图' in text:
                 log.info('screen capture')
+                comment(u'还不支持本操作:(')
+            else:
+                log.error('unknown operation')
+                comment(u'还不支持本操作:(')
+        else:
+            log.error('unknown user')
+            comment(u'你不是我的主人，请不要打扰我')
 
         self.since_id = id
 
