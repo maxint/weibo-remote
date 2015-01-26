@@ -20,16 +20,16 @@ PP = pprint.PrettyPrinter()
 
 
 def enable_log(logger, logfile):
-    logFormatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] %(message)s")
+    formatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] %(message)s")
     logger.setLevel(logging.DEBUG)
 
     fileHandler = logging.FileHandler(logfile)
-    fileHandler.setFormatter(logFormatter)
+    fileHandler.setFormatter(formatter)
     fileHandler.setLevel(logging.DEBUG)
     logger.addHandler(fileHandler)
 
     consoleHandler = logging.StreamHandler()
-    consoleHandler.setFormatter(logFormatter)
+    consoleHandler.setFormatter(formatter)
     consoleHandler.setLevel(logging.DEBUG)
     logger.addHandler(consoleHandler)
 
@@ -44,7 +44,6 @@ def sleep_time():
     now = datetime.datetime.now()
     h = now.hour
     m = now.minute
-    s = now.second
     if h == 8 and m > 30:
         if m < 50:
             return 30
@@ -60,7 +59,7 @@ def sleep_time():
 
 class Main():
     def __init__(self, username, passwd, debug=False, master='maxint'):
-        log.info('Login as master %s (weibo: %s)', username, master)
+        log.info('Login as %s (weibo: %s)', username, master)
         self.username = username
         self.passwd = passwd
         self.debug = debug
@@ -113,7 +112,7 @@ class Main():
     def run_once(self):
         # test expired token
         # raise weibo.WeiboException('{"error_code": 21315}')
-        mentions = self.wb.statuses_mentions()
+        # mentions = self.wb.statuses_mentions()
         ids = self.wb.statuses_mentions_ids(since_id=self.since_id) or {}
         for id in ids.get('statuses', []):
             s = self.wb.statuses_show(id)
