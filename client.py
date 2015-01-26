@@ -16,19 +16,19 @@ DATA_FILE = '.data.json'
 PP = pprint.PrettyPrinter()
 
 
-def enable_log(loger, logfile):
+def enable_log(logger, logfile):
     logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-    loger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.DEBUG)
 
     fileHandler = logging.FileHandler(logfile)
     fileHandler.setFormatter(logFormatter)
     fileHandler.setLevel(logging.DEBUG)
-    loger.addHandler(fileHandler)
+    logger.addHandler(fileHandler)
 
     consoleHandler = logging.StreamHandler()
     consoleHandler.setFormatter(logFormatter)
     consoleHandler.setLevel(logging.DEBUG)
-    loger.addHandler(consoleHandler)
+    logger.addHandler(consoleHandler)
 
     log.info("Running Weibo Client")
 
@@ -58,31 +58,41 @@ def sleep_time():
 
 class Main():
     def __init__(self, username, passwd, debug=False, master='maxint'):
-        self.httpd = None
-        self.wb = weibo.load(TOKEN_FILE)
-        if self.wb and not self.wb.users_show(screen_name=master):
-            self.wb = None
-        if not self.wb:
-            log.info('Login as master %s (weibo: %s)', username, master)
-            self.wb = weibo.Weibo('3150443457', 'e9a369d1575e399cb1d06c0a79685e67')
-            self.wb.authorize(forcelogin=True)
-            self.start_http()
-        try:
-            d = json.load(open(DATA_FILE, 'rt'))
-        except:
-            d = dict()
-        self.since_id = d.get('since_id', 0)
+        log.info('Login as master %s (weibo: %s)', username, master)
         self.username = username
         self.passwd = passwd
         self.debug = debug
         self.master = master
         self.changed = False
 
-    def start_http(self):
-        host = '127.0.0.1'
-        port = 8000
+    def load(self):
+        self.wb = weibo.load(TOKEN_FILE)
+        self.httpd = None
+        if not self.wb or not self.wb.statuses_mentions_ids():
+            self.login(True)
+        try:
+            d = json.load(open(DATA_FILE, 'rt'))
+        except:
+            d = dict()
+        self.since_id = d.get('since_id', 0)
+
+    def login(self, forcelogin):
+        self.wb = weibo.Weibo('3150443457', 'e9a369d1575e399cb1d06c0a79685e67')
+        self.wb.authorize(forcelogin=forcelogin)
         log.info('Start HTTP Server')
-        self.httpd = BaseHTTPServer.HTTPServer((host, port), ServerRequestHandler)
+        self.httpd = BaseHTTPServer.HTTPServer(('127.0.0.1', 8000),
+                                               ServerRequestHandler)
+        self.httpd.handle_request()
+        while not self.authorized:
+            pass
+        self.httpd.server_close()
+        self.httpd = None
+        log.info('Close HTTP server')
+
+    def close(self):
+        if self.httpd:
+            self.httpd.server_close()
+            self.httpd = None
 
     def store(self):
         if self.changed:
@@ -106,14 +116,7 @@ class Main():
         self.store()
 
     def run(self):
-        if self.httpd:
-            self.httpd.handle_request()
-            while not self.authorized:
-                pass
-            self.httpd.server_close()
-            log.info('Close HTTP server')
-
-        log.debug('Main loop')
+        log.debug('Start main loop')
         while True:
             self.run_once()
             if self.debug:
@@ -207,4 +210,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main = Main(args.username, args.password, args.debug, args.master)
-    main.run()
+    try:
+        main.load()
+        main.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        main.close()
