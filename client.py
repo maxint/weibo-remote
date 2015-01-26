@@ -67,8 +67,8 @@ class Main():
         self.changed = False
 
     def load(self):
-        self.wb = weibo.load(TOKEN_FILE)
         self.httpd = None
+        self.wb = weibo.load(TOKEN_FILE)
         try:
             self.wb.statuses_mentions_ids()
         except:
@@ -121,10 +121,15 @@ class Main():
         self.store()
 
     def run(self):
+        from oauthlib.oauth2 import TokenExpiredError
         log.debug('Start main loop')
         while True:
             try:
                 self.run_once()
+            except TokenExpiredError:
+                log.warn('Re-login when OAuth2 token is expired')
+                self.login(False)
+                log.warn('Continue after re-login')
             except weibo.WeiboException, ex:
                 log.warn('Re-login as a weibo exception occured')
                 if ex.msg.get('error_code', 0) not in [21315, 21327]:
@@ -210,13 +215,8 @@ class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 <head>
 <meta charset="utf-8"/>
 <title>OK</title>
-<script type="text/javascript">
-setTimeout(function(){
-  window.close();
-},1000);
-</script>
 </head>
-<body>Succeed. This window may be closed automatically after 1s</body>
+<body>Succeed.</body>
 </html> ''')
 
 

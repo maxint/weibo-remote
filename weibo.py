@@ -25,10 +25,7 @@ class WeiboException(Exception):
 
 
 class Weibo():
-    def __init__(self, client_id, client_secret, access_token=None):
-        token = {}
-        if access_token:
-            token['access_token'] = access_token
+    def __init__(self, client_id, client_secret, token=None):
         self.oauth = OAuth2Session(redirect_uri='http://127.0.0.1:8000/response',
                                    token=token,
                                    client=WebApplicationClient(client_id=client_id,
@@ -54,8 +51,8 @@ class Weibo():
         s = json.dumps(dict(
             client_id=self.oauth.client_id,
             client_secret=self.client_secret,
-            access_token=self.oauth._client.access_token,
-        ))
+            token=self.oauth._client.token,
+        ), indent=2)
         open(filename, 'wt').write(s)
 
     def request(self, method, subpath, **kwargs):
@@ -98,8 +95,7 @@ class Weibo():
 
 def load(filename):
     '''Return None if loading failed'''
-    try:
+    import os.path
+    if os.path.isfile(filename):
         d = json.load(open(filename, 'rt'))
-        return Weibo(d['client_id'], d['client_secret'], d['access_token'])
-    except:
-        pass
+        return Weibo(d['client_id'], d['client_secret'], d['token'])
