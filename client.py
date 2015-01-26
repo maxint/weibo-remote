@@ -68,7 +68,9 @@ class Main():
     def load(self):
         self.wb = weibo.load(TOKEN_FILE)
         self.httpd = None
-        if not self.wb or not self.wb.statuses_mentions_ids():
+        try:
+            self.wb.statuses_mentions_ids()
+        except:
             self.login(True)
         try:
             d = json.load(open(DATA_FILE, 'rt'))
@@ -107,6 +109,8 @@ class Main():
         return self.wb.oauth.authorized
 
     def run_once(self):
+        # test expired token
+        # raise weibo.WeiboException('{"error_code": 21315}')
         mentions = self.wb.statuses_mentions()
         ids = self.wb.statuses_mentions_ids(since_id=self.since_id) or {}
         for id in ids.get('statuses', []):
@@ -118,7 +122,14 @@ class Main():
     def run(self):
         log.debug('Start main loop')
         while True:
-            self.run_once()
+            try:
+                self.run_once()
+            except weibo.WeiboException, ex:
+                log.warn('Re-login as a weibo exception occured')
+                if ex.msg.get('error_code', 0) not in [21315, 21327]:
+                    raise
+                self.login(False)
+                log.warn('Continue after re-login')
             if self.debug:
                 break
             time.sleep(sleep_time())
@@ -192,8 +203,18 @@ class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             log.debug('Get response code: %s', code)
             main.wb.access_token(code)
             main.wb.store(TOKEN_FILE)
-            self.echoHTML('OK')
-
+            self.echoHTML('''<html>
+<head>
+<meta charset="utf-8"/>
+<title>OK</title>
+<script type="text/javascript">
+setTimeout(function(){
+  window.close();
+},1000);
+</script>
+</head>
+<body>Succeed. This window may be closed automatically after 1s</body>
+</html> ''')
 
 if __name__ == '__main__':
     enable_log(log, 'weibo.log')

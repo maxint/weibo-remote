@@ -12,6 +12,17 @@ log = logging.getLogger('weibo')
 API_HOST = 'https://api.weibo.com/'
 
 
+class WeiboException(Exception):
+    def __init__(self, text):
+        try:
+            self.msg = json.loads(text)
+        except:
+            self.msg = dict(error=text)
+
+    def __str__(self):
+        return repr(self.msg)
+
+
 class Weibo():
     def __init__(self, client_id, client_secret, access_token=None):
         token = {}
@@ -51,6 +62,7 @@ class Weibo():
             return json.loads(req.text)
         else:
             log.error(req.text)
+            raise WeiboException(req.text)
 
     def get(self, subpath, **kwargs):
         return self.request('GET', subpath, **kwargs)
