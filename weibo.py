@@ -1,11 +1,12 @@
 # coding: utf-8
 __author__ = 'maxint'
 
-import urllib
-from requests_oauthlib import OAuth2Session
-from oauthlib.oauth2 import WebApplicationClient
 import json
 import logging
+
+from requests_oauthlib import OAuth2Session
+from oauthlib.oauth2 import WebApplicationClient
+
 
 log = logging.getLogger('weibo')
 
@@ -41,6 +42,7 @@ class Weibo():
     def authorize(self, **kwargs):
         url, _ = self.oauth.authorization_url(self.url('oauth2/authorize'), **kwargs)
         import webbrowser
+
         webbrowser.open(url)
 
     def access_token(self, code):
@@ -81,6 +83,7 @@ class Weibo():
         return self.post('2/comments/create.json',
                          data=dict(comment=comment,
                                    id=id))
+
     def statuses_mentions(self, **kwargs):
         '''@since_id, @count'''
         return self.get('2/statuses/mentions.json', params=kwargs)
@@ -91,6 +94,7 @@ class Weibo():
     def statuses_show(self, id):
         return self.get('2/statuses/show.json',
                         params=dict(id=id))
+
 
 def load(filename):
     '''Return None if loading failed'''

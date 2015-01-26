@@ -2,12 +2,15 @@
 __author__ = 'maxint'
 
 import BaseHTTPServer
-import weibo
 import urlparse
 import pprint
 import json
 import logging
 import time
+import datetime
+
+import weibo
+
 
 log = logging.getLogger('weibo')
 
@@ -38,7 +41,6 @@ def pprint(m):
 
 
 def sleep_time():
-    import datetime
     now = datetime.datetime.now()
     h = now.hour
     m = now.minute
@@ -145,6 +147,7 @@ class Main():
 
     def checkin(self, id, text, user):
         import checkin
+
         log.info('== checkin')
         ss = text.split()
         if len(ss) >= 4:
@@ -165,6 +168,7 @@ class Main():
 
     def process(self, id, text, user):
         log.info('User: %s, Id: %s, Content: %s', user, id, text)
+
         def comment(content):
             self.wb.comments_create(content, id)
 
@@ -216,10 +220,12 @@ setTimeout(function(){
 <body>Succeed. This window may be closed automatically after 1s</body>
 </html> ''')
 
+
 if __name__ == '__main__':
     enable_log(log, 'weibo.log')
 
     import argparse
+
     parser = argparse.ArgumentParser(description='weibo client of a computer')
     parser.add_argument('username', help='user name of doc-server')
     parser.add_argument('password', help='password of doc-server')

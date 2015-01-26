@@ -1,28 +1,32 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import urllib, urllib2, cookielib
+import urllib
+import urllib2
+import cookielib
 import re
 import sys
 import getpass
 
+
 def usage():
     print 'usage: checkin.py [username] <passwd>'
+
 
 def checkin(username, passwd):
     # get field name
     cj = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     opener.addheaders = [
-            ('Host', 'doc-server'), 
-            ('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0'),
-            ('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'),
-            ('Accept-Language', 'en-us,en;q=0.5'),  
-            ('Accept-Encoding', 'gzip, deflate'),  
-            ('Accept-Charset', 'ISO-8859-1,utf-8;q=0.7,*;q=0.7'),  
-            ('Referer', 'http://doc-server/login.asp'),
-            ('Connection', 'keep-alive'),
-            ]
+        ('Host', 'doc-server'),
+        ('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0'),
+        ('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'),
+        ('Accept-Language', 'en-us,en;q=0.5'),
+        ('Accept-Encoding', 'gzip, deflate'),
+        ('Accept-Charset', 'ISO-8859-1,utf-8;q=0.7,*;q=0.7'),
+        ('Referer', 'http://doc-server/login.asp'),
+        ('Connection', 'keep-alive'),
+    ]
 
     rooturl = 'http://doc-server'
     res = opener.open(rooturl + '/login.asp')
@@ -31,12 +35,12 @@ def checkin(username, passwd):
     # check in
     login_data = urllib.urlencode({'push_type': '2', fieldname: username, 'password': passwd})
     res = opener.open(rooturl + '/confirm.asp', login_data)
-    #import ipdb; ipdb.set_trace()
     if res.geturl() == rooturl + '/confirm.asp':
         errstr = re.findall(r'alert\("([^"]+)', res.read())[0]
         return False, errstr
     else:
         return True, 'Success!'
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:
@@ -63,4 +67,5 @@ if __name__ == '__main__':
             count += 1
 
     import time
+
     time.sleep(1)
