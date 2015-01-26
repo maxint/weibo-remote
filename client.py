@@ -11,7 +11,7 @@ import time
 
 log = logging.getLogger('weibo')
 
-CACHED_FILE = '.token.json'
+TOKEN_FILE = '.token.json'
 DATA_FILE = '.data.json'
 PP = pprint.PrettyPrinter()
 
@@ -58,11 +58,15 @@ def sleep_time():
 
 class Main():
     def __init__(self, username, passwd, debug=False, master='maxint'):
-        try:
-            self.wb = weibo.load(CACHED_FILE)
-        except:
+        self.httpd = None
+        self.wb = weibo.load(TOKEN_FILE)
+        if self.wb and not self.wb.users_show(screen_name=master):
+            self.wb = None
+        if not self.wb:
+            log.info('Login as master %s (weibo: %s)', username, master)
             self.wb = weibo.Weibo('3150443457', 'e9a369d1575e399cb1d06c0a79685e67')
-            self.wb.authorize()
+            self.wb.authorize(forcelogin=True)
+            self.start_http()
         try:
             d = json.load(open(DATA_FILE, 'rt'))
         except:
@@ -74,6 +78,12 @@ class Main():
         self.master = master
         self.changed = False
 
+    def start_http(self):
+        host = '127.0.0.1'
+        port = 8000
+        log.info('Start HTTP Server')
+        self.httpd = BaseHTTPServer.HTTPServer((host, port), ServerRequestHandler)
+
     def store(self):
         if self.changed:
             s = json.dumps(dict(
@@ -82,22 +92,37 @@ class Main():
             open(DATA_FILE, 'wt').write(s)
             self.changed = False
 
-    def do(self):
+    @property
+    def authorized(self):
+        return self.wb.oauth.authorized
+
+    def run_once(self):
         mentions = self.wb.statuses_mentions()
         ids = self.wb.statuses_mentions_ids(since_id=self.since_id) or {}
         for id in ids.get('statuses', []):
             s = self.wb.statuses_show(id)
             if s:
                 self.process(s['idstr'], s['text'], s['user']['name'])
+        self.store()
 
-    def safe_do(self):
+    def run(self):
+        if self.httpd:
+            self.httpd.handle_request()
+            while not self.authorized:
+                pass
+            self.httpd.server_close()
+            log.info('Close HTTP server')
+
+        log.debug('Main loop')
+        while True:
+            self.run_once()
+            if self.debug:
+                break
+            time.sleep(sleep_time())
+
+    def save_run(self):
         try:
-            while True:
-                self.do()
-                self.store()
-                if self.debug:
-                    break
-                time.sleep(sleep_time())
+            self.run()
         finally:
             self.store()
 
@@ -160,11 +185,11 @@ class ServerRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_GET(self):
         qs = urlparse.parse_qs(urlparse.urlsplit(self.path).query)
         if 'code' in qs:
-            main.wb.access_token(qs['code'][0])
-            main.wb.store(CACHED_FILE)
-            main.safe_do()
+            code = qs['code'][0]
+            log.debug('Get response code: %s', code)
+            main.wb.access_token(code)
+            main.wb.store(TOKEN_FILE)
             self.echoHTML('OK')
-            httpd.server_close()
 
 
 if __name__ == '__main__':
@@ -182,14 +207,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     main = Main(args.username, args.password, args.debug, args.master)
-    if main.wb.oauth.authorized:
-        main.safe_do()
-    else:
-        host = '127.0.0.1'
-        port = 8000
-        httpd = BaseHTTPServer.HTTPServer((host, port), ServerRequestHandler)
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            pass
-        httpd.server_close()
+    main.run()

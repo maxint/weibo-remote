@@ -27,8 +27,8 @@ class Weibo():
     def url(self, subpath):
         return API_HOST + subpath
 
-    def authorize(self):
-        url, _ = self.oauth.authorization_url(self.url('oauth2/authorize'))
+    def authorize(self, **kwargs):
+        url, _ = self.oauth.authorization_url(self.url('oauth2/authorize'), **kwargs)
         import webbrowser
         webbrowser.open(url)
 
@@ -58,6 +58,10 @@ class Weibo():
     def post(self, subpath, **kwargs):
         return self.request('POST', subpath, **kwargs)
 
+    def users_show(self, **kwargs):
+        '''@screen_name or @uid'''
+        return self.get('2/users/show.json', params=kwargs)
+
     def comments_mentions(self):
         return self.get('2/comments/mentions.json')
 
@@ -77,5 +81,9 @@ class Weibo():
                         params=dict(id=id))
 
 def load(filename):
-    d = json.load(open(filename, 'rt'))
-    return Weibo(d['client_id'], d['client_secret'], d['access_token'])
+    '''Return None if loading failed'''
+    try:
+        d = json.load(open(filename, 'rt'))
+        return Weibo(d['client_id'], d['client_secret'], d['access_token'])
+    except:
+        pass
