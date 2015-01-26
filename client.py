@@ -20,7 +20,7 @@ PP = pprint.PrettyPrinter()
 
 
 def enable_log(logger, logfile):
-    logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    logFormatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s] %(message)s")
     logger.setLevel(logging.DEBUG)
 
     fileHandler = logging.FileHandler(logfile)
