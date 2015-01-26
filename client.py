@@ -165,7 +165,7 @@ class Main():
             self.weibo_comment(u'usage: checkin username passwd', id)
             return
 
-        log.info("%s, %s", username, passwd)
+        log.info("%s, %s", username, '*' * len(passwd))
         r, msg = checkin.checkin(username, passwd)
         log.info(str(msg))
         self.weibo_comment(u'成功啦[呵呵]' if r else u'出错啦[泪]' + msg, id)
