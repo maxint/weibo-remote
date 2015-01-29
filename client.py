@@ -46,13 +46,15 @@ def sleep_time():
     m = now.minute
     if h == 8 and m > 30:
         if m < 50:
-            return 30
+            return 40
         elif m < 55:
-            return 20
+            return 30
         elif m < 58:
-            return 10
+            return 20
+        elif m < 59:
+            return 15
         else:
-            return 1
+            return 10
     else:
         return 60
 
@@ -127,15 +129,20 @@ class Main():
             try:
                 self.run_once()
             except TokenExpiredError:
-                log.warn('Re-login when OAuth2 token is expired')
+                log.warn('Re-login as OAuth2 token is expired')
                 self.login(False)
                 log.warn('Continue after re-login')
             except weibo.WeiboException, ex:
-                log.warn('Re-login as a weibo exception occured')
-                if ex.msg.get('error_code', 0) not in [21315, 21327]:
+                log.warn('Weibo exception occured')
+                err_code = ex.msg.get('error_code', 0)
+                if err_code in [21315, 21327]:
+                    log.warn('Re-login')
+                    self.login(False)
+                    log.warn('Continue after re-login')
+                elif err_code in [10023]:
+                    time.sleep(60)
+                else:
                     raise
-                self.login(False)
-                log.warn('Continue after re-login')
             if self.debug:
                 break
             time.sleep(sleep_time())
