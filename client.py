@@ -61,18 +61,20 @@ def sleep_time():
 
 class Main():
     def __init__(self, username, passwd, debug=False, master='maxint'):
-        log.info('Login as %s (weibo: %s)', username, master)
+        log.info('Login as %s (weibo master: %s)', username, master)
         self.username = username
         self.passwd = passwd
         self.debug = debug
         self.master = master
         self.changed = False
+        self.uid = ''
+        self.weibo_user = ''
 
     def load(self):
         self.httpd = None
         self.wb = weibo.load(TOKEN_FILE)
         try:
-            self.wb.statuses_mentions_ids()
+            self.update_weibo_user()
         except:
             self.login(True)
         try:
@@ -81,9 +83,9 @@ class Main():
             d = dict()
         self.since_id = d.get('since_id', 0)
 
-    def login(self, forcelogin):
+    def login(self, force_login):
         self.wb = weibo.Weibo('3150443457', 'e9a369d1575e399cb1d06c0a79685e67')
-        self.wb.authorize(forcelogin=forcelogin)
+        self.wb.authorize(forcelogin=force_login)
         log.info('Start HTTP Server')
         self.httpd = BaseHTTPServer.HTTPServer(('127.0.0.1', 8000),
                                                ServerRequestHandler)
@@ -93,6 +95,13 @@ class Main():
         self.httpd.server_close()
         self.httpd = None
         log.info('Close HTTP server')
+
+        self.update_weibo_user()
+
+    def update_weibo_user(self):
+        self.uid = self.wb.account_get_uid()
+        self.weibo_user = self.wb.users_show(uid=self.uid)['name']
+        log.info('Weibo user: %s (%s)', self.weibo_user, self.uid)
 
     def close(self):
         if self.httpd:

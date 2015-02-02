@@ -92,6 +92,8 @@ class Weibo():
         return self.get('2/statuses/show.json',
                         params=dict(id=id))
 
+    def account_get_uid(self):
+        return self.get('2/account/get_uid.json')['uid']
 
 def load(filename):
     '''Return None if loading failed'''
