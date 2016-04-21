@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+__author__ = 'maxint <lnychina_NOSPAM@gmail.com>'
+
 import urllib
 import urllib2
 import cookielib
@@ -66,6 +68,9 @@ if __name__ == '__main__':
             passwd = None
             count += 1
 
-    import time
-
-    time.sleep(1)
+    if count == 3:
+        import os
+        os.system('pause')
+    else:
+        import time
+        time.sleep(1)

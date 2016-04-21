@@ -1,5 +1,6 @@
 # coding: utf-8
-__author__ = 'maxint'
+
+__author__ = 'maxint <lnychina_NOSPAM@gmail.com>'
 
 import json
 import logging
